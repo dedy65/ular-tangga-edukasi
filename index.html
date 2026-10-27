@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ular Tangga Edukasi — Bahasa Indonesia & Numerasi</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font-family: 'Trebuchet MS', 'Comic Sans MS', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 45%, #00c6ff 100%);
+    background-attachment: fixed; color: #24304a; padding: 18px;
+  }
+  .app { max-width: 1100px; margin: 0 auto; }
+  header { text-align: center; color: #fff; margin-bottom: 16px; text-shadow: 0 3px 0 rgba(0,0,0,.18); }
+  header h1 { margin: 0 0 4px; font-size: clamp(20px, 3.6vw, 34px); }
+  header p  { margin: 0; font-size: clamp(12px, 1.8vw, 16px); opacity: .95; }
+  header .credit {
+    margin: 8px 0 0; font-size: clamp(11px, 1.7vw, 15px); font-weight: bold;
+    letter-spacing: .6px; color: #ffe066; text-shadow: 0 2px 0 rgba(0,0,0,.25);
+  }
+  main { display: flex; gap: 18px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+  .board-wrap {
+    background: #fff; padding: 10px; border-radius: 22px;
+    box-shadow: 0 14px 30px rgba(0,0,0,.28); flex: 0 1 620px; max-width: 620px; width: 100%;
+  }
+  canvas { width: 100%; height: auto; display: block; border-radius: 14px; background: #eef4ff; }
+  .panel { flex: 0 1 320px; width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: #fff; border-radius: 18px; padding: 14px 16px; box-shadow: 0 10px 22px rgba(0,0,0,.20); }
+  .turn-card {
+    display: flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, #fff6d5, #ffe0f0); border: 3px solid #ffd166;
+  }
+  .turn-card .emoji { font-size: 34px; line-height: 1; }
+  .turn-card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #9a7b00; }
+  .turn-card .name  { font-size: 20px; font-weight: bold; color: #7a4b00; }
+  .dice-area { text-align: center; }
+  .dice {
+    width: 92px; height: 92px; margin: 0 auto 12px; border-radius: 20px;
+    background: linear-gradient(145deg, #ffffff, #e6ecff); border: 4px solid #4a6cf7;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 54px; color: #2b3a80; box-shadow: 0 8px 0 #2f47b5, 0 12px 20px rgba(0,0,0,.25);
+  }
+  .dice.rolling { animation: shake .12s infinite; }
+  @keyframes shake {
+    0%   { transform: rotate(-8deg) scale(1.03); }
+    50%  { transform: rotate(8deg) scale(.97); }
+    100% { transform: rotate(-8deg) scale(1.03); }
+  }
+  button { font-family: inherit; cursor: pointer; border: none; outline: none; }
+  #rollBtn {
+    width: 100%; padding: 14px; font-size: 18px; font-weight: bold; color: #fff;
+    border-radius: 14px; background: linear-gradient(180deg, #ff8a3d, #f4600f);
+    box-shadow: 0 6px 0 #b8430a; transition: transform .08s, box-shadow .08s;
+  }
+  #rollBtn:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #b8430a; }
+  #rollBtn:disabled {
+    background: linear-gradient(180deg, #c9cfdd, #a8b0c2);
+    box-shadow: 0 6px 0 #8a92a5; cursor: not-allowed;
+  }
+  .players { display: flex; flex-direction: column; gap: 10px; }
+  .pcard {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: 14px; border: 3px solid transparent; background: #f5f7ff; transition: .2s;
+  }
+  .pcard.active {
+    border-color: #ffb703; background: #fffbe8; transform: scale(1.02);
+    box-shadow: 0 6px 14px rgba(255,183,3,.35);
+  }
+  .pcard .avatar {
+    width: 40px; height: 40px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 22px; flex: 0 0 auto;
+  }
+  .pcard .info { flex: 1 1 auto; min-width: 0; }
+  .pcard .pname { font-weight: bold; font-size: 15px; }
+  .pcard .pmeta { font-size: 12px; color: #667; }
+  .pcard .pts { font-weight: bold; font-size: 18px; color: #f4600f; white-space: nowrap; }
+  .log-card h3 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #556; }
+  #log { max-height: 140px; overflow-y: auto; font-size: 13px; line-height: 1.5; color: #334; }
+  #log div { padding: 4px 6px; border-radius: 8px; margin-bottom: 3px; background: #f4f6fc; }
+  #log div:first-child { background: #e8f0ff; font-weight: bold; }
+  #musicBtn {
+    width: 100%; padding: 10px; border-radius: 12px; font-weight: bold; font-size: 15px;
+    color: #fff; background: linear-gradient(180deg, #43d17a, #1fa855);
+    box-shadow: 0 5px 0 #146b36; transition: .15s;
+  }
+  #musicBtn.off { background: linear-gradient(180deg, #9aa3b5, #6b7385); box-shadow: 0 5px 0 #4a5263; }
+  #resetBtn {
+    width: 100%; padding: 10px; border-radius: 12px; font-weight: bold; font-size: 15px;
+    color: #fff; background: linear-gradient(180deg, #6f7bf7, #4450d6); box-shadow: 0 5px 0 #2d36a0;
+  }
+  .modal {
+    position: fixed; inset: 0; background: rgba(15, 20, 45, .72);
+    backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center;
+    padding: 16px; z-index: 50; animation: fadeIn .2s ease;
+  }
+  .modal.hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-card {
+    width: 100%; max-width: 580px; background: #fff; border-radius: 24px; padding: 20px;
+    box-shadow: 0 24px 50px rgba(0,0,0,.4); animation: pop .28s cubic-bezier(.2,1.4,.5,1);
+    text-align: center; max-height: 94vh; overflow-y: auto;
+  }
+  @keyframes pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .quiz-headline { font-size: 22px; font-weight: bold; margin-bottom: 4px; color: #2575fc; }
+  .quiz-sub { font-size: 13px; color: #667; margin-bottom: 12px; }
+  .quiz-question {
+    font-size: 14.5px; line-height: 1.55; margin: 10px 0 16px; color: #1e2a4a;
+    background: #f1f5ff; border-radius: 14px; padding: 14px 16px;
+    border: 3px dashed #b9c8ff; text-align: left; white-space: pre-wrap;
+    max-height: 48vh; overflow-y: auto;
+  }
+  .quiz-options { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  .opt-btn {
+    padding: 11px 14px; font-size: 14px; font-weight: bold; font-family: inherit;
+    color: #223; border-radius: 12px; background: linear-gradient(180deg, #ffffff, #e8eeff);
+    border: 3px solid #b9c8ff; box-shadow: 0 4px 0 #b9c8ff; transition: .12s;
+    text-align: left; line-height: 1.4;
+  }
+  .opt-btn:hover:not(:disabled) {
+    transform: translateY(-2px); background: linear-gradient(180deg, #fffef0, #ffeeb8);
+    border-color: #ffc93c; box-shadow: 0 4px 0 #ffc93c;
+  }
+  .opt-btn.correct {
+    background: linear-gradient(180deg, #c9f7c9, #7ee07e) !important;
+    border-color: #34a853 !important; box-shadow: 0 4px 0 #34a853 !important; color: #0a3d12;
+  }
+  .opt-btn.wrong {
+    background: linear-gradient(180deg, #ffd0d0, #ff9b9b) !important;
+    border-color: #e33 !important; box-shadow: 0 4px 0 #e33 !important; color: #5a0000;
+    animation: shakeX .35s;
+  }
+  @keyframes shakeX {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  .quiz-feedback { margin-top: 12px; font-size: 14px; font-weight: bold; min-height: 20px; color: #888; }
+  .quiz-feedback.ok  { color: #1c9c46; }
+  .quiz-feedback.bad { color: #d62b2b; }
+  .win-card { max-width: 420px; }
+  .win-emoji { font-size: 70px; }
+  .win-title { font-size: 28px; font-weight: bold; color: #f4600f; margin: 8px 0; }
+  .win-sub { color: #556; margin-bottom: 18px; }
+  @media (max-width: 720px) {
+    main { flex-direction: column; align-items: center; }
+    .panel { max-width: 620px; }
+    .quiz-question { font-size: 13px; }
+    .opt-btn { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <h1>🐍 Ular Tangga Edukasi 🪜</h1>
+    <p>Teks Eksplanasi • Kalimat Utama • Numerasi (Tabel &amp; Grafik) • Tokoh • Watak • Latar • Amanat</p>
+    <p class="credit">Dibuat Oleh : Dedy Nugroho, S.Pd.SD</p>
+  </header>
+
+  <main>
+    <div class="board-wrap"><canvas id="board" width="600" height="600"></canvas></div>
+
+    <aside class="panel">
+      <div class="card turn-card">
+        <div class="emoji" id="turnEmoji">🐯</div>
+        <div>
+          <div class="label">Giliran Sekarang</div>
+          <div class="name" id="turnName">Pemain 1</div>
+        </div>
+      </div>
+
+      <div class="card dice-area">
+        <div class="dice" id="dice">⚀</div>
+        <button id="rollBtn">🎲 Lempar Dadu</button>
+      </div>
+
+      <div class="card players">
+        <div class="pcard" id="pcard0">
+          <div class="avatar" style="background:#ffe0e0">🐯</div>
+          <div class="info">
+            <div class="pname" style="color:#e23b3b">Pemain 1</div>
+            <div class="pmeta">Petak: <span id="pos0">Start</span></div>
+          </div>
+          <div class="pts"><span id="score0">0</span> ⭐</div>
+        </div>
+        <div class="pcard" id="pcard1">
+          <div class="avatar" style="background:#dfe9ff">🐼</div>
+          <div class="info">
+            <div class="pname" style="color:#2575fc">Pemain 2</div>
+            <div class="pmeta">Petak: <span id="pos1">Start</span></div>
+          </div>
+          <div class="pts"><span id="score1">0</span> ⭐</div>
+        </div>
+      </div>
+
+      <div class="card log-card">
+        <h3>📜 Catatan Permainan</h3>
+        <div id="log"></div>
+      </div>
+
+      <button id="musicBtn">🎵 Musik: ON</button>
+      <button id="resetBtn">🔄 Mulai Ulang Permainan</button>
+    </aside>
+  </main>
+</div>
+
+<div class="modal hidden" id="quizModal">
+  <div class="modal-card">
+    <div class="quiz-headline" id="quizHeadline">❓ KUIS</div>
+    <div class="quiz-sub" id="quizSub">Jawab pertanyaan berikut</div>
+    <div class="quiz-question" id="quizQuestion">...</div>
+    <div class="quiz-options" id="quizOptions"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+  </div>
+</div>
+
+<div class="modal hidden" id="winModal">
+  <div class="modal-card win-card">
+    <div class="win-emoji">🏆</div>
+    <div class="win-title" id="winTitle">Pemain 1 Menang!</div>
+    <div class="win-sub" id="winSub">Skor akhir: 0 ⭐</div>
+    <button id="winResetBtn" style="padding:14px 26px;font-size:17px;font-weight:bold;color:#fff;border-radius:14px;background:linear-gradient(180deg,#ff8a3d,#f4600f);box-shadow:0 6px 0 #b8430a;">Main Lagi 🎮</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   1. KONFIGURASI PAPAN
+   ========================================================= */
+const SIZE = 600, N = 10, CELL = SIZE / N;
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const DPR = window.devicePixelRatio || 1;
+canvas.width = SIZE * DPR; canvas.height = SIZE * DPR;
+ctx.scale(DPR, DPR);
+
+const LADDERS = { 2:23, 8:34, 20:77, 32:68, 41:79, 74:88, 82:100 };
+const SNAKES  = { 29:9, 38:15, 47:5, 53:33, 62:37, 86:54, 92:70, 98:79 };
+const QUIZ_TILES = [7, 25, 44, 66, 90];
+
+/* =========================================================
+   2. STATE PERMAINAN
+   ========================================================= */
+const state = {
+  players: [
+    { name: 'Pemain 1', emoji: '🐯', color: '#ff4757', pos: 0, score: 0 },
+    { name: 'Pemain 2', emoji: '🐼', color: '#2575fc', pos: 0, score: 0 }
+  ],
+  turn: 0, busy: false, gameOver: false
+};
+
+/* =========================================================
+   3. UTILITAS
+   ========================================================= */
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* =========================================================
+   3b. MUSIC ENGINE
+   ========================================================= */
+const NOTE_FREQ = {
+  C3:130.81, D3:146.83, E3:164.81, F3:174.61, G3:196.00, A3:220.00, B3:246.94,
+  C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00, A4:440.00, B4:493.88,
+  C5:523.25, D5:587.33, E5:659.25, F5:698.46, G5:783.99, A5:880.00
+};
+const MELODY = [
+  ['C5',0.5],['E5',0.5],['G5',0.5],['E5',0.5],['C5',0.5],['E5',0.5],['G5',1.0],
+  ['D5',0.5],['G5',0.5],['B4',0.5],['D5',0.5],['G5',0.5],['D5',0.5],['B4',1.0],
+  ['A4',0.5],['C5',0.5],['E5',0.5],['A5',0.5],['E5',0.5],['C5',0.5],['A4',1.0],
+  ['F4',0.5],['A4',0.5],['C5',0.5],['F5',0.5],['C5',0.5],['A4',0.5],['F4',1.0],
+  ['C5',0.5],['E5',0.5],['G5',0.5],['E5',0.5],['C5',0.5],['E5',0.5],['G5',1.0],
+  ['D5',0.5],['G5',0.5],['B4',0.5],['D5',0.5],['G5',0.5],['D5',0.5],['B4',1.0],
+  ['F4',0.5],['A4',0.5],['C5',0.5],['F5',0.5],['A5',0.5],['F5',0.5],['C5',1.0],
+  ['C5',0.5],['G4',0.5],['E4',0.5],['G4',0.5],['C5',2.0]
+];
+const BASS = ['C3','G3','A3','F3','C3','G3','F3','C3'];
+const TEMPO = 120, BEAT = 60 / TEMPO;
+
+const Music = (() => {
+  let ctx=null, master=null, musicGain=null, sfxGain=null;
+  let playing=false, enabled=true, loopTimeout=null;
+  function init() {
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master=ctx.createGain(); master.gain.value=0.55; master.connect(ctx.destination);
+    musicGain=ctx.createGain(); musicGain.gain.value=0.22; musicGain.connect(master);
+    sfxGain=ctx.createGain(); sfxGain.gain.value=0.55; sfxGain.connect(master);
+  }
+  function playNote(freq,start,dur,type,vol,target) {
+    const osc=ctx.createOscillator(), g=ctx.createGain();
+    osc.type=type; osc.frequency.value=freq;
+    g.gain.setValueAtTime(0.0001,start);
+    g.gain.linearRampToValueAtTime(vol,start+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+    osc.connect(g); g.connect(target);
+    osc.start(start); osc.stop(start+dur+0.05);
+  }
+  function scheduleLoop() {
+    if (!playing||!ctx) return;
+    const loopStart=ctx.currentTime+0.08; let t=loopStart;
+    MELODY.forEach(([note,beats])=>{
+      const dur=beats*BEAT;
+      playNote(NOTE_FREQ[note],t,dur*0.85,'triangle',0.12,musicGain);
+      if (beats>=1) playNote(NOTE_FREQ[note]*2,t,dur*0.6,'sine',0.05,musicGain);
+      t+=dur;
+    });
+    const barDur=4*BEAT;
+    BASS.forEach((note,i)=>playNote(NOTE_FREQ[note],loopStart+i*barDur,barDur*0.9,'sine',0.14,musicGain));
+    loopTimeout=setTimeout(scheduleLoop,(t-loopStart-0.15)*1000);
+  }
+  function start(){ if(!enabled) return; init(); if(ctx.state==='suspended') ctx.resume(); if(playing) return; playing=true; scheduleLoop(); }
+  function stop(){ playing=false; if(loopTimeout){ clearTimeout(loopTimeout); loopTimeout=null; } }
+  function toggle(){ enabled=!enabled; if(enabled) start(); else stop(); return enabled; }
+  function ensureCtx(){ init(); if(ctx.state==='suspended') ctx.resume(); }
+  function sfxDice(){ ensureCtx(); const t0=ctx.currentTime; [660,880,1100,880].forEach((f,i)=>playNote(f,t0+i*0.05,0.09,'square',0.10,sfxGain)); }
+  function sfxCorrect(){ ensureCtx(); const t0=ctx.currentTime; [523.25,659.25,783.99,1046.5].forEach((f,i)=>playNote(f,t0+i*0.07,0.18,'triangle',0.16,sfxGain)); }
+  function sfxWrong(){ ensureCtx(); const t0=ctx.currentTime; [440,349.23,261.63].forEach((f,i)=>playNote(f,t0+i*0.12,0.18,'sawtooth',0.10,sfxGain)); }
+  function sfxLadder(){ ensureCtx(); const t0=ctx.currentTime; [523.25,659.25,783.99,1046.5,1318.5].forEach((f,i)=>playNote(f,t0+i*0.06,0.13,'triangle',0.13,sfxGain)); }
+  function sfxSnake(){ ensureCtx(); const t0=ctx.currentTime; for(let i=0;i<14;i++) playNote(800-i*50,t0+i*0.04,0.08,'sawtooth',0.06,sfxGain); }
+  function sfxWin(){ ensureCtx(); const t0=ctx.currentTime; [523.25,659.25,783.99,1046.5,783.99,1046.5,1318.5].forEach((f,i)=>playNote(f,t0+i*0.14,0.35,'triangle',0.16,sfxGain)); }
+  return { start, stop, toggle, sfxDice, sfxCorrect, sfxWrong, sfxLadder, sfxSnake, sfxWin };
+})();
+
+/* =========================================================
+   4. GAMBAR PAPAN
+   ========================================================= */
+function roundRect(c,x,y,w,h,r){
+  c.beginPath(); c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function tileCenter(tile) {
+  const idx=tile-1, rowFromBottom=Math.floor(idx/10);
+  let col=idx%10; if (rowFromBottom%2===1) col=9-col;
+  return { x: col*CELL+CELL/2, y: (N-1-rowFromBottom)*CELL+CELL/2 };
+}
+function draw() {
+  ctx.clearRect(0,0,SIZE,SIZE);
+  drawTiles(); drawLadders(); drawSnakes(); drawPlayers();
+}
+function drawTiles() {
+  for (let t=1;t<=100;t++) {
+    const {x,y}=tileCenter(t);
+    const px=x-CELL/2+2, py=y-CELL/2+2, w=CELL-4;
+    let fill;
+    if (LADDERS[t]) fill='#c9f5c2';
+    else if (SNAKES[t]) fill='#ffd2d2';
+    else if (QUIZ_TILES.includes(t)) fill='#fff0a8';
+    else fill=`hsl(${(t*29)%360},62%,90%)`;
+    roundRect(ctx,px,py,w,w,9);
+    ctx.fillStyle=fill; ctx.fill();
+    ctx.lineWidth=1.5; ctx.strokeStyle='rgba(60,80,140,.20)'; ctx.stroke();
+    if (QUIZ_TILES.includes(t)) {
+      ctx.font='16px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('❓',x,y+6);
+    }
+    ctx.font='bold 11px "Trebuchet MS", sans-serif'; ctx.fillStyle='rgba(40,55,100,.75)';
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText(t,px+6,py+5);
+  }
+}
+function drawLadders() {
+  for (const from in LADDERS) drawLadder(tileCenter(+from), tileCenter(LADDERS[from]));
+}
+function drawLadder(p1,p2) {
+  const dx=p2.x-p1.x, dy=p2.y-p1.y, len=Math.hypot(dx,dy)||1;
+  const nx=-dy/len*7, ny=dx/len*7;
+  ctx.lineCap='round';
+  ctx.strokeStyle='rgba(0,0,0,.15)'; ctx.lineWidth=9;
+  ctx.beginPath();
+  ctx.moveTo(p1.x+nx+2,p1.y+ny+3); ctx.lineTo(p2.x+nx+2,p2.y+ny+3);
+  ctx.moveTo(p1.x-nx+2,p1.y-ny+3); ctx.lineTo(p2.x-nx+2,p2.y-ny+3);
+  ctx.stroke();
+  ctx.strokeStyle='#c98b3c'; ctx.lineWidth=6;
+  ctx.beginPath();
+  ctx.moveTo(p1.x+nx,p1.y+ny); ctx.lineTo(p2.x+nx,p2.y+ny);
+  ctx.moveTo(p1.x-nx,p1.y-ny); ctx.lineTo(p2.x-nx,p2.y-ny);
+  ctx.stroke();
+  const rungs=Math.max(3,Math.round(len/26));
+  ctx.strokeStyle='#e0a95c'; ctx.lineWidth=5;
+  for (let i=1;i<rungs;i++) {
+    const t=i/rungs, cx=p1.x+dx*t, cy=p1.y+dy*t;
+    ctx.beginPath(); ctx.moveTo(cx+nx,cy+ny); ctx.lineTo(cx-nx,cy-ny); ctx.stroke();
+  }
+}
+function drawSnakes() {
+  for (const from in SNAKES) drawSnake(tileCenter(+from), tileCenter(SNAKES[from]));
+}
+function drawSnake(head,tail) {
+  const dx=tail.x-head.x, dy=tail.y-head.y, len=Math.hypot(dx,dy)||1;
+  const px=-dy/len, py=dx/len;
+  const waves=Math.max(2,Math.round(len/90));
+  const amp=Math.min(18,len*0.10);
+  const steps=60, pts=[];
+  for (let i=0;i<=steps;i++) {
+    const t=i/steps, bx=head.x+dx*t, by=head.y+dy*t;
+    const off=Math.sin(t*Math.PI*2*waves)*amp*Math.sin(Math.PI*t);
+    pts.push({ x:bx+px*off, y:by+py*off });
+  }
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.strokeStyle='rgba(0,0,0,.14)'; ctx.lineWidth=15;
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x+2,p.y+3):ctx.moveTo(p.x+2,p.y+3)); ctx.stroke();
+  ctx.strokeStyle='#3fa34d'; ctx.lineWidth=12;
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.strokeStyle='#8fd694'; ctx.lineWidth=5; ctx.setLineDash([6,12]);
+  ctx.beginPath(); pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(head.x,head.y,12,0,Math.PI*2);
+  ctx.fillStyle='#2e8b3d'; ctx.fill();
+  ctx.lineWidth=2.5; ctx.strokeStyle='#1f6b2b'; ctx.stroke();
+  const ex=px, ey=py;
+  [-1,1].forEach(s=>{
+    ctx.beginPath(); ctx.arc(head.x+ex*5*s-2,head.y+ey*5*s-2,3.2,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(head.x+ex*5*s-2,head.y+ey*5*s-2,1.5,0,Math.PI*2); ctx.fillStyle='#111'; ctx.fill();
+  });
+}
+function drawPlayers() {
+  state.players.forEach((p,i)=>{
+    const base=p.pos>0?tileCenter(p.pos):tileCenter(1);
+    const ox=i===0?-13:13, oy=i===0?-13:13;
+    const x=base.x+ox, y=base.y+oy;
+    ctx.beginPath(); ctx.arc(x+1,y+3,14,0,Math.PI*2); ctx.fillStyle='rgba(0,0,0,.22)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x,y,14,0,Math.PI*2); ctx.fillStyle=p.color; ctx.fill();
+    ctx.lineWidth=3; ctx.strokeStyle='#ffffff'; ctx.stroke();
+    ctx.font='16px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.emoji,x,y+1);
+  });
+}
+
+/* =========================================================
+   5. BANK SOAL (77 SOAL)
+   ========================================================= */
+const QUESTION_BANK = [
+
+  /* ---- A. KONSEP TEKS EKSPLANASI (8) ---- */
+  { topic: 'Teks Eksplanasi',
+    q: 'Teks eksplanasi adalah teks yang berisi ...',
+    opts: ['Proses terjadinya suatu fenomena alam atau sosial','Cerita khayalan penulis','Langkah-langkah membuat sesuatu','Riwayat hidup seseorang'],
+    ans: 'Proses terjadinya suatu fenomena alam atau sosial' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Urutan struktur teks eksplanasi yang benar adalah ...',
+    opts: ['Pernyataan umum – deretan penjelas – interpretasi/kesimpulan','Orientasi – komplikasi – resolusi','Pembuka – isi – amanat','Tesis – argumentasi – penegasan ulang'],
+    ans: 'Pernyataan umum – deretan penjelas – interpretasi/kesimpulan' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Bagian PERNYATAAN UMUM pada teks eksplanasi berisi ...',
+    opts: ['Pengenalan atau penjelasan umum tentang fenomena yang dibahas','Rangkaian proses terjadinya fenomena secara rinci','Simpulan penulis tentang fenomena','Pesan moral untuk pembaca'],
+    ans: 'Pengenalan atau penjelasan umum tentang fenomena yang dibahas' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Bagian DERETAN PENJELAS pada teks eksplanasi berisi ...',
+    opts: ['Rangkaian proses terjadinya fenomena secara rinci dan berurutan','Pengenalan umum tentang fenomena','Simpulan akhir penulis','Kalimat pembuka teks'],
+    ans: 'Rangkaian proses terjadinya fenomena secara rinci dan berurutan' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Bagian INTERPRETASI atau KESIMPULAN berisi ...',
+    opts: ['Simpulan atau interpretasi penulis tentang fenomena','Pengenalan umum fenomena','Rangkaian proses terjadinya fenomena','Contoh-contoh fenomena lain'],
+    ans: 'Simpulan atau interpretasi penulis tentang fenomena' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Ciri khas teks eksplanasi adalah ...',
+    opts: ['Bersifat faktual, ilmiah, dan menjelaskan sebab-akibat','Bersifat imajinatif dan penuh khayalan','Berupa cerita dengan tokoh hewan','Berisi langkah-langkah membuat sesuatu'],
+    ans: 'Bersifat faktual, ilmiah, dan menjelaskan sebab-akibat' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Tujuan utama teks eksplanasi adalah ...',
+    opts: ['Menjelaskan proses terjadinya suatu fenomena','Menghibur pembaca dengan cerita lucu','Menceritakan pengalaman pribadi','Mengajak pembaca melakukan sesuatu'],
+    ans: 'Menjelaskan proses terjadinya suatu fenomena' },
+  { topic: 'Teks Eksplanasi',
+    q: 'Konjungsi yang sering digunakan dalam teks eksplanasi adalah ...',
+    opts: ['sebab, akibat, karena, sehingga','konon, pada suatu hari','diam-diam, tiba-tiba','wah, aduh, hai'],
+    ans: 'sebab, akibat, karena, sehingga' },
+
+  /* ---- B. BACAAN HUJAN (3) ---- */
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA HUJAN\n\nHujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi. Hujan terjadi melalui beberapa tahapan.\n\nPertama, air di permukaan bumi menguap karena panas matahari. Uap air naik ke atmosfer. Kedua, uap air mengalami pendinginan dan berubah menjadi titik-titik air yang membentuk awan. Ketiga, ketika awan sudah penuh, titik-titik air jatuh kembali ke bumi sebagai hujan.\n\nDapat disimpulkan bahwa hujan terjadi karena penguapan air oleh matahari, pengembunan di atmosfer, dan turun kembali ke bumi.\n\nPERNYATAAN UMUM teks tersebut adalah ...',
+    opts: ['Hujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi.','Air di permukaan bumi menguap karena panas matahari.','Uap air berubah menjadi titik-titik air.','Titik-titik air jatuh kembali ke bumi.'],
+    ans: 'Hujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA HUJAN\n\nHujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi. Hujan terjadi melalui beberapa tahapan.\n\nPertama, air di permukaan bumi menguap karena panas matahari. Uap air naik ke atmosfer. Kedua, uap air mengalami pendinginan dan berubah menjadi titik-titik air yang membentuk awan. Ketiga, ketika awan sudah penuh, titik-titik air jatuh kembali ke bumi sebagai hujan.\n\nDapat disimpulkan bahwa hujan terjadi karena penguapan air oleh matahari, pengembunan di atmosfer, dan turun kembali ke bumi.\n\nDERETAN PENJELAS teks tersebut adalah ...',
+    opts: ['Air menguap karena panas matahari, uap naik dan mendingin menjadi awan, lalu jatuh sebagai hujan.','Hujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi.','Hujan terjadi karena penguapan, pengembunan, dan turun kembali ke bumi.','Hujan sangat bermanfaat bagi tumbuhan.'],
+    ans: 'Air menguap karena panas matahari, uap naik dan mendingin menjadi awan, lalu jatuh sebagai hujan.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA HUJAN\n\nHujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi. Hujan terjadi melalui beberapa tahapan.\n\nPertama, air di permukaan bumi menguap karena panas matahari. Uap air naik ke atmosfer. Kedua, uap air mengalami pendinginan dan berubah menjadi titik-titik air yang membentuk awan. Ketiga, ketika awan sudah penuh, titik-titik air jatuh kembali ke bumi sebagai hujan.\n\nDapat disimpulkan bahwa hujan terjadi karena penguapan air oleh matahari, pengembunan di atmosfer, dan turun kembali ke bumi.\n\nKESIMPULAN teks tersebut adalah ...',
+    opts: ['Hujan terjadi karena penguapan air oleh matahari, pengembunan di atmosfer, dan turun kembali ke bumi.','Hujan adalah peristiwa jatuhnya titik-titik air dari atmosfer ke permukaan bumi.','Air di permukaan bumi menguap karena panas matahari.','Titik-titik air membentuk awan kemudian jatuh ke bumi.'],
+    ans: 'Hujan terjadi karena penguapan air oleh matahari, pengembunan di atmosfer, dan turun kembali ke bumi.' },
+
+  /* ---- C. BACAAN GERHANA MATAHARI (3) ---- */
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA GERHANA MATAHARI\n\nGerhana matahari adalah peristiwa tertutupnya matahari oleh bulan. Peristiwa ini terjadi ketika posisi bulan berada di antara bumi dan matahari.\n\nGerhana matahari terjadi ketika bulan berada tepat di antara bumi dan matahari. Pada saat itu, cahaya matahari yang seharusnya sampai ke bumi terhalang oleh bulan. Akibatnya, sebagian atau seluruh permukaan bumi menjadi gelap karena tertutup bayangan bulan. Bayangan bulan yang mengenai bumi ada dua jenis, yaitu umbra (bayangan inti) dan penumbra (bayangan kabur).\n\nDengan demikian, gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari sehingga cahaya matahari terhalang dan bumi menjadi gelap.\n\nPERNYATAAN UMUM teks tersebut adalah ...',
+    opts: ['Gerhana matahari adalah peristiwa tertutupnya matahari oleh bulan.','Bulan berada tepat di antara bumi dan matahari.','Cahaya matahari yang menuju bumi terhalang oleh bulan.','Sebagian permukaan bumi menjadi gelap.'],
+    ans: 'Gerhana matahari adalah peristiwa tertutupnya matahari oleh bulan.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA GERHANA MATAHARI\n\nGerhana matahari adalah peristiwa tertutupnya matahari oleh bulan. Peristiwa ini terjadi ketika posisi bulan berada di antara bumi dan matahari.\n\nGerhana matahari terjadi ketika bulan berada tepat di antara bumi dan matahari. Pada saat itu, cahaya matahari yang seharusnya sampai ke bumi terhalang oleh bulan. Akibatnya, sebagian atau seluruh permukaan bumi menjadi gelap karena tertutup bayangan bulan. Bayangan bulan yang mengenai bumi ada dua jenis, yaitu umbra (bayangan inti) dan penumbra (bayangan kabur).\n\nDengan demikian, gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari sehingga cahaya matahari terhalang dan bumi menjadi gelap.\n\nDERETAN PENJELAS teks tersebut adalah ...',
+    opts: ['Bulan berada di antara bumi dan matahari, cahaya terhalang, bumi menjadi gelap tertutup bayangan bulan.','Gerhana matahari adalah peristiwa tertutupnya matahari oleh bulan.','Gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari.','Gerhana matahari terjadi sekali setahun.'],
+    ans: 'Bulan berada di antara bumi dan matahari, cahaya terhalang, bumi menjadi gelap tertutup bayangan bulan.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA GERHANA MATAHARI\n\nGerhana matahari adalah peristiwa tertutupnya matahari oleh bulan. Peristiwa ini terjadi ketika posisi bulan berada di antara bumi dan matahari.\n\nGerhana matahari terjadi ketika bulan berada tepat di antara bumi dan matahari. Pada saat itu, cahaya matahari yang seharusnya sampai ke bumi terhalang oleh bulan. Akibatnya, sebagian atau seluruh permukaan bumi menjadi gelap karena tertutup bayangan bulan. Bayangan bulan yang mengenai bumi ada dua jenis, yaitu umbra (bayangan inti) dan penumbra (bayangan kabur).\n\nDengan demikian, gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari sehingga cahaya matahari terhalang dan bumi menjadi gelap.\n\nKESIMPULAN teks tersebut adalah ...',
+    opts: ['Gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari sehingga cahaya terhalang.','Gerhana matahari adalah peristiwa tertutupnya matahari oleh bulan.','Bulan berada tepat di antara bumi dan matahari.','Bayangan bulan terdiri dari umbra dan penumbra.'],
+    ans: 'Gerhana matahari terjadi karena posisi bulan di antara bumi dan matahari sehingga cahaya terhalang.' },
+
+  /* ---- D. BACAAN FOTOSINTESIS (3) ---- */
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES FOTOSINTESIS PADA TUMBUHAN\n\nFotosintesis adalah proses tumbuhan hijau membuat makanan sendiri dengan bantuan cahaya matahari.\n\nProses fotosintesis membutuhkan tiga hal utama: air, karbon dioksida, dan cahaya matahari. Air diserap akar dari dalam tanah. Karbon dioksida diambil dari udara melalui stomata di permukaan daun. Klorofil menangkap energi cahaya matahari. Energi tersebut digunakan untuk mengolah air dan karbon dioksida menjadi zat makanan (glukosa) dan oksigen.\n\nJadi, fotosintesis terjadi karena tumbuhan menyerap air dan karbon dioksida, kemudian dengan bantuan cahaya matahari mengolahnya menjadi makanan dan oksigen.\n\nPERNYATAAN UMUM teks tersebut adalah ...',
+    opts: ['Fotosintesis adalah proses tumbuhan hijau membuat makanan sendiri dengan bantuan cahaya matahari.','Proses fotosintesis membutuhkan air, karbon dioksida, dan cahaya matahari.','Air diserap oleh akar dari dalam tanah.','Klorofil menangkap energi cahaya matahari.'],
+    ans: 'Fotosintesis adalah proses tumbuhan hijau membuat makanan sendiri dengan bantuan cahaya matahari.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES FOTOSINTESIS PADA TUMBUHAN\n\nFotosintesis adalah proses tumbuhan hijau membuat makanan sendiri dengan bantuan cahaya matahari.\n\nProses fotosintesis membutuhkan tiga hal utama: air, karbon dioksida, dan cahaya matahari. Air diserap akar dari dalam tanah. Karbon dioksida diambil dari udara melalui stomata di permukaan daun. Klorofil menangkap energi cahaya matahari. Energi tersebut digunakan untuk mengolah air dan karbon dioksida menjadi zat makanan (glukosa) dan oksigen.\n\nJadi, fotosintesis terjadi karena tumbuhan menyerap air dan karbon dioksida, kemudian dengan bantuan cahaya matahari mengolahnya menjadi makanan dan oksigen.\n\nDERETAN PENJELAS teks tersebut adalah ...',
+    opts: ['Air diserap akar, karbon dioksida diambil dari udara melalui stomata, klorofil menangkap cahaya, mengolahnya menjadi makanan dan oksigen.','Fotosintesis adalah proses tumbuhan membuat makanan sendiri.','Fotosintesis terjadi karena tumbuhan mengolah air dan karbon dioksida menjadi makanan.','Tumbuhan hijau sangat penting bagi kehidupan.'],
+    ans: 'Air diserap akar, karbon dioksida diambil dari udara melalui stomata, klorofil menangkap cahaya, mengolahnya menjadi makanan dan oksigen.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES FOTOSINTESIS PADA TUMBUHAN\n\nFotosintesis adalah proses tumbuhan hijau membuat makanan sendiri dengan bantuan cahaya matahari.\n\nProses fotosintesis membutuhkan tiga hal utama: air, karbon dioksida, dan cahaya matahari. Air diserap akar dari dalam tanah. Karbon dioksida diambil dari udara melalui stomata di permukaan daun. Klorofil menangkap energi cahaya matahari. Energi tersebut digunakan untuk mengolah air dan karbon dioksida menjadi zat makanan (glukosa) dan oksigen.\n\nJadi, fotosintesis terjadi karena tumbuhan menyerap air dan karbon dioksida, kemudian dengan bantuan cahaya matahari mengolahnya menjadi makanan dan oksigen.\n\nKESIMPULAN teks tersebut adalah ...',
+    opts: ['Fotosintesis terjadi karena tumbuhan menyerap air dan karbon dioksida, lalu dengan bantuan cahaya matahari mengolahnya menjadi makanan dan oksigen.','Fotosintesis adalah proses tumbuhan hijau membuat makanan sendiri.','Air diserap oleh akar dari dalam tanah.','Klorofil menangkap energi cahaya matahari di daun.'],
+    ans: 'Fotosintesis terjadi karena tumbuhan menyerap air dan karbon dioksida, lalu dengan bantuan cahaya matahari mengolahnya menjadi makanan dan oksigen.' },
+
+  /* ---- E. BACAAN PETIR (3) ---- */
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PETIR\n\nPetir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer yang disertai kilatan cahaya dan suara gemuruh.\n\nPetir terjadi ketika awan-awan yang mengandung uap air bergesekan di atmosfer. Gesekan tersebut menghasilkan muatan listrik. Muatan listrik positif dan negatif berkumpul di dalam awan. Ketika perbedaan muatan sudah sangat besar, terjadilah pelepasan muatan listrik. Pelepasan ini menghasilkan cahaya yang kita lihat sebagai kilat dan suara yang kita dengar sebagai guntur.\n\nBerdasarkan uraian tersebut, petir terjadi akibat adanya pelepasan muatan listrik dari awan yang bergesekan.\n\nPERNYATAAN UMUM teks tersebut adalah ...',
+    opts: ['Petir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer.','Awan-awan yang mengandung uap air bergesekan di atmosfer.','Gesekan awan menghasilkan muatan listrik.','Terjadi pelepasan muatan listrik yang besar.'],
+    ans: 'Petir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PETIR\n\nPetir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer yang disertai kilatan cahaya dan suara gemuruh.\n\nPetir terjadi ketika awan-awan yang mengandung uap air bergesekan di atmosfer. Gesekan tersebut menghasilkan muatan listrik. Muatan listrik positif dan negatif berkumpul di dalam awan. Ketika perbedaan muatan sudah sangat besar, terjadilah pelepasan muatan listrik. Pelepasan ini menghasilkan cahaya yang kita lihat sebagai kilat dan suara yang kita dengar sebagai guntur.\n\nBerdasarkan uraian tersebut, petir terjadi akibat adanya pelepasan muatan listrik dari awan yang bergesekan.\n\nDERETAN PENJELAS teks tersebut adalah ...',
+    opts: ['Awan bergesekan menghasilkan muatan listrik, muatan berkumpul di awan, lalu terjadi pelepasan muatan.','Petir adalah fenomena alam berupa pelepasan muatan listrik.','Petir terjadi akibat pelepasan muatan listrik dari awan.','Petir disertai kilatan cahaya dan suara gemuruh.'],
+    ans: 'Awan bergesekan menghasilkan muatan listrik, muatan berkumpul di awan, lalu terjadi pelepasan muatan.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PETIR\n\nPetir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer yang disertai kilatan cahaya dan suara gemuruh.\n\nPetir terjadi ketika awan-awan yang mengandung uap air bergesekan di atmosfer. Gesekan tersebut menghasilkan muatan listrik. Muatan listrik positif dan negatif berkumpul di dalam awan. Ketika perbedaan muatan sudah sangat besar, terjadilah pelepasan muatan listrik. Pelepasan ini menghasilkan cahaya yang kita lihat sebagai kilat dan suara yang kita dengar sebagai guntur.\n\nBerdasarkan uraian tersebut, petir terjadi akibat adanya pelepasan muatan listrik dari awan yang bergesekan.\n\nKESIMPULAN teks tersebut adalah ...',
+    opts: ['Petir terjadi akibat adanya pelepasan muatan listrik dari awan yang bergesekan.','Petir adalah fenomena alam berupa pelepasan muatan listrik di atmosfer.','Awan-awan yang mengandung uap air bergesekan di atmosfer.','Pelepasan muatan listrik menghasilkan kilat dan guntur.'],
+    ans: 'Petir terjadi akibat adanya pelepasan muatan listrik dari awan yang bergesekan.' },
+
+  /* ---- F. BACAAN PELANGI (3) ---- */
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PELANGI\n\nPelangi adalah fenomena optik berupa busur warna-warni di langit yang terjadi karena pembiasan cahaya matahari oleh tetesan air.\n\nPelangi terbentuk ketika cahaya matahari melewati tetesan air hujan. Cahaya matahari yang berwarna putih dibiaskan dan diuraikan oleh tetesan air menjadi berbagai warna. Warna-warna tersebut diuraikan menjadi merah, jingga, kuning, hijau, biru, nila, dan ungu. Proses penguraian cahaya ini disebut dispersi. Semakin besar tetesan air, semakin jelas warna pelangi.\n\nDapat disimpulkan bahwa pelangi terjadi karena pembiasan dan penguraian cahaya matahari oleh tetesan air hujan menjadi warna-warna indah.\n\nPERNYATAAN UMUM teks tersebut adalah ...',
+    opts: ['Pelangi adalah fenomena optik berupa busur warna-warni di langit.','Cahaya matahari melewati tetesan air hujan.','Cahaya matahari dibiaskan dan diuraikan oleh tetesan air.','Warna pelangi terdiri dari merah, jingga, kuning, hijau, biru, nila, dan ungu.'],
+    ans: 'Pelangi adalah fenomena optik berupa busur warna-warni di langit.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PELANGI\n\nPelangi adalah fenomena optik berupa busur warna-warni di langit yang terjadi karena pembiasan cahaya matahari oleh tetesan air.\n\nPelangi terbentuk ketika cahaya matahari melewati tetesan air hujan. Cahaya matahari yang berwarna putih dibiaskan dan diuraikan oleh tetesan air menjadi berbagai warna. Warna-warna tersebut diuraikan menjadi merah, jingga, kuning, hijau, biru, nila, dan ungu. Proses penguraian cahaya ini disebut dispersi. Semakin besar tetesan air, semakin jelas warna pelangi.\n\nDapat disimpulkan bahwa pelangi terjadi karena pembiasan dan penguraian cahaya matahari oleh tetesan air hujan menjadi warna-warna indah.\n\nDERETAN PENJELAS teks tersebut adalah ...',
+    opts: ['Cahaya matahari melewati tetesan air hujan, dibiaskan dan diuraikan menjadi berbagai warna.','Pelangi adalah fenomena optik berupa busur warna-warni di langit.','Pelangi terjadi karena pembiasan cahaya matahari oleh tetesan air.','Pelangi sering muncul setelah hujan reda.'],
+    ans: 'Cahaya matahari melewati tetesan air hujan, dibiaskan dan diuraikan menjadi berbagai warna.' },
+  { topic: 'Teks Eksplanasi (Bacaan)',
+    q: 'Bacalah teks berikut!\n\nPROSES TERJADINYA PELANGI\n\nPelangi adalah fenomena optik berupa busur warna-warni di langit yang terjadi karena pembiasan cahaya matahari oleh tetesan air.\n\nPelangi terbentuk ketika cahaya matahari melewati tetesan air hujan. Cahaya matahari yang berwarna putih dibiaskan dan diuraikan oleh tetesan air menjadi berbagai warna. Warna-warna tersebut diuraikan menjadi merah, jingga, kuning, hijau, biru, nila, dan ungu. Proses penguraian cahaya ini disebut dispersi. Semakin besar tetesan air, semakin jelas warna pelangi.\n\nDapat disimpulkan bahwa pelangi terjadi karena pembiasan dan penguraian cahaya matahari oleh tetesan air hujan menjadi warna-warna indah.\n\nKESIMPULAN teks tersebut adalah ...',
+    opts: ['Pelangi terjadi karena pembiasan dan penguraian cahaya matahari oleh tetesan air hujan.','Pelangi adalah fenomena optik berupa busur warna-warni.','Cahaya matahari yang berwarna putih dibiaskan oleh tetesan air.','Proses penguraian cahaya disebut dispersi.'],
+    ans: 'Pelangi terjadi karena pembiasan dan penguraian cahaya matahari oleh tetesan air hujan.' },
+
+  /* ---- G. KALIMAT UTAMA (5) ---- */
+  { topic: 'Kalimat Utama',
+    q: 'Bacalah paragraf berikut!\n\n"Olahraga pagi sangat bermanfaat bagi kesehatan. Tubuh menjadi lebih segar setelah berolahraga. Peredaran darah menjadi lancar. Pikiran pun menjadi lebih tenang."\n\nKalimat utama paragraf tersebut adalah ...',
+    opts: ['Olahraga pagi sangat bermanfaat bagi kesehatan.','Tubuh menjadi lebih segar setelah berolahraga.','Peredaran darah menjadi lancar.','Pikiran pun menjadi lebih tenang.'],
+    ans: 'Olahraga pagi sangat bermanfaat bagi kesehatan.' },
+  { topic: 'Kalimat Utama',
+    q: 'Bacalah paragraf berikut!\n\n"Sampah plastik sangat berbahaya bagi lingkungan. Plastik sulit terurai di dalam tanah. Sampah plastik juga mencemari laut. Hewan-hewan laut sering mati karena memakan plastik."\n\nKalimat utama paragraf tersebut adalah ...',
+    opts: ['Sampah plastik sangat berbahaya bagi lingkungan.','Plastik sulit terurai di dalam tanah.','Sampah plastik mencemari laut.','Hewan laut mati karena memakan plastik.'],
+    ans: 'Sampah plastik sangat berbahaya bagi lingkungan.' },
+  { topic: 'Kalimat Utama',
+    q: 'Bacalah paragraf berikut!\n\n"Membaca buku memiliki banyak manfaat. Dengan membaca, wawasan kita bertambah. Kosakata kita juga meningkat. Daya imajinasi kita menjadi lebih berkembang."\n\nKalimat utama paragraf tersebut adalah ...',
+    opts: ['Membaca buku memiliki banyak manfaat.','Dengan membaca, wawasan kita bertambah.','Kosakata kita juga meningkat.','Daya imajinasi kita menjadi lebih berkembang.'],
+    ans: 'Membaca buku memiliki banyak manfaat.' },
+  { topic: 'Kalimat Utama',
+    q: 'Bacalah paragraf berikut!\n\n"Sarapan pagi sangat penting bagi siswa. Sarapan memberikan energi untuk belajar. Konsentrasi belajar menjadi lebih baik. Siswa tidak mudah lelah saat mengikuti pelajaran."\n\nKalimat utama paragraf tersebut adalah ...',
+    opts: ['Sarapan pagi sangat penting bagi siswa.','Sarapan memberikan energi untuk belajar.','Konsentrasi belajar menjadi lebih baik.','Siswa tidak mudah lelah saat mengikuti pelajaran.'],
+    ans: 'Sarapan pagi sangat penting bagi siswa.' },
+  { topic: 'Kalimat Utama',
+    q: 'Bacalah paragraf berikut!\n\n"Menabung adalah kebiasaan baik yang perlu ditanamkan sejak dini. Dengan menabung, kita belajar hidup hemat. Kita juga belajar mengatur keuangan. Uang tabungan dapat digunakan untuk keperluan mendesak."\n\nKalimat utama paragraf tersebut adalah ...',
+    opts: ['Menabung adalah kebiasaan baik yang perlu ditanamkan sejak dini.','Dengan menabung, kita belajar hidup hemat.','Kita juga belajar mengatur keuangan.','Uang tabungan dapat digunakan untuk keperluan mendesak.'],
+    ans: 'Menabung adalah kebiasaan baik yang perlu ditanamkan sejak dini.' },
+
+  /* ---- H. NUMERASI — TABEL (15) ---- */
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA CURAH HUJAN SELAMA SEMINGGU (mm):\n\nSenin    : 12\nSelasa   : 8\nRabu     : 15\nKamis    : 10\nJumat    : 20\nSabtu    : 5\nMinggu   : 25\n\nHari dengan curah hujan TERTINGGI adalah ...',
+    opts: ['Senin','Sabtu','Minggu','Jumat'],
+    ans: 'Minggu' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA CURAH HUJAN SELAMA SEMINGGU (mm):\n\nSenin    : 12\nSelasa   : 8\nRabu     : 15\nKamis    : 10\nJumat    : 20\nSabtu    : 5\nMinggu   : 25\n\nHari dengan curah hujan TERENDAH adalah ...',
+    opts: ['Senin','Sabtu','Minggu','Kamis'],
+    ans: 'Sabtu' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA CURAH HUJAN SELAMA SEMINGGU (mm):\n\nSenin    : 12\nSelasa   : 8\nRabu     : 15\nKamis    : 10\nJumat    : 20\nSabtu    : 5\nMinggu   : 25\n\nSelisih curah hujan tertinggi dan terendah adalah ... mm',
+    opts: ['15','20','25','30'],
+    ans: '20' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA CURAH HUJAN SELAMA SEMINGGU (mm):\n\nSenin    : 12\nSelasa   : 8\nRabu     : 15\nKamis    : 10\nJumat    : 20\nSabtu    : 5\nMinggu   : 25\n\nTotal curah hujan Senin sampai Jumat adalah ... mm',
+    opts: ['55','60','65','70'],
+    ans: '65' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA BANYAK SISWA KE PERPUSTAKAAN:\n\nSenin    : 25 siswa\nSelasa   : 30 siswa\nRabu     : 20 siswa\nKamis    : 35 siswa\nJumat    : 15 siswa\nSabtu    : 40 siswa\n\nHari dengan pengunjung TERBANYAK adalah ...',
+    opts: ['Senin','Kamis','Jumat','Sabtu'],
+    ans: 'Sabtu' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA BANYAK SISWA KE PERPUSTAKAAN:\n\nSenin    : 25 siswa\nSelasa   : 30 siswa\nRabu     : 20 siswa\nKamis    : 35 siswa\nJumat    : 15 siswa\nSabtu    : 40 siswa\n\nBanyak siswa yang berkunjung pada hari Rabu adalah ...',
+    opts: ['15 siswa','20 siswa','25 siswa','30 siswa'],
+    ans: '20 siswa' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA BANYAK SISWA KE PERPUSTAKAAN:\n\nSenin    : 25 siswa\nSelasa   : 30 siswa\nRabu     : 20 siswa\nKamis    : 35 siswa\nJumat    : 15 siswa\nSabtu    : 40 siswa\n\nSelisih pengunjung terbanyak dan tersedikit adalah ...',
+    opts: ['20 siswa','25 siswa','30 siswa','35 siswa'],
+    ans: '25 siswa' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA BANYAK SISWA KE PERPUSTAKAAN:\n\nSenin    : 25 siswa\nSelasa   : 30 siswa\nRabu     : 20 siswa\nKamis    : 35 siswa\nJumat    : 15 siswa\nSabtu    : 40 siswa\n\nTotal pengunjung Senin sampai Jumat adalah ...',
+    opts: ['115 siswa','120 siswa','125 siswa','130 siswa'],
+    ans: '125 siswa' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA BANYAK SISWA KE PERPUSTAKAAN:\n\nSenin    : 25 siswa\nSelasa   : 30 siswa\nRabu     : 20 siswa\nKamis    : 35 siswa\nJumat    : 15 siswa\nSabtu    : 40 siswa\n\nRata-rata pengunjung Senin sampai Jumat adalah ...',
+    opts: ['20 siswa','22 siswa','25 siswa','28 siswa'],
+    ans: '25 siswa' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA VOLUME AIR KELUARGA BU ANI (liter):\n\nSenin    : 100 liter\nSelasa   : 150 liter\nRabu     : 120 liter\nKamis    : 200 liter\nJumat    : 180 liter\n\nHari dengan volume air TERBANYAK adalah ...',
+    opts: ['Senin','Selasa','Kamis','Jumat'],
+    ans: 'Kamis' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA VOLUME AIR KELUARGA BU ANI (liter):\n\nSenin    : 100 liter\nSelasa   : 150 liter\nRabu     : 120 liter\nKamis    : 200 liter\nJumat    : 180 liter\n\nTotal volume air yang digunakan selama 5 hari adalah ... liter',
+    opts: ['650 liter','700 liter','750 liter','800 liter'],
+    ans: '750 liter' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA VOLUME AIR KELUARGA BU ANI (liter):\n\nSenin    : 100 liter\nSelasa   : 150 liter\nRabu     : 120 liter\nKamis    : 200 liter\nJumat    : 180 liter\n\nSelisih volume air terbanyak dan tersedikit adalah ... liter',
+    opts: ['80 liter','100 liter','120 liter','150 liter'],
+    ans: '100 liter' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA HASIL PANEN PADI PAK BUDI (kg):\n\nJanuari   : 50 kg\nFebruari  : 70 kg\nMaret     : 60 kg\nApril     : 80 kg\nMei       : 90 kg\n\nBulan dengan hasil panen TERTINGGI adalah ...',
+    opts: ['Februari','Maret','April','Mei'],
+    ans: 'Mei' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA HASIL PANEN PADI PAK BUDI (kg):\n\nJanuari   : 50 kg\nFebruari  : 70 kg\nMaret     : 60 kg\nApril     : 80 kg\nMei       : 90 kg\n\nTotal hasil panen Januari sampai Mei adalah ... kg',
+    opts: ['300 kg','320 kg','350 kg','400 kg'],
+    ans: '350 kg' },
+  { topic: 'Numerasi (Tabel)',
+    q: 'DATA NILAI ULANGAN 5 SISWA:\n\nAndi     : 80\nBudi     : 90\nCitra    : 75\nDewi     : 85\nEka      : 95\n\nSiswa dengan nilai TERTINGGI adalah ...',
+    opts: ['Andi','Budi','Dewi','Eka'],
+    ans: 'Eka' },
+
+  /* ---- I. NUMERASI — GRAFIK (5) ---- */
+  { topic: 'Numerasi (Grafik)',
+    q: 'GRAFIK CURAH HUJAN (mm):\n\nSenin   : ██████ 6\nSelasa  : ██████████ 10\nRabu    : ████████ 8\nKamis   : ████████████ 12\nJumat   : ██████████ 10\n\nCurah hujan tertinggi terjadi pada hari ...',
+    opts: ['Senin','Selasa','Rabu','Kamis'],
+    ans: 'Kamis' },
+  { topic: 'Numerasi (Grafik)',
+    q: 'GRAFIK PENGUNJUNG PERPUSTAKAAN (1 █ = 5 siswa):\n\nSenin   : █████ 25\nSelasa  : ████ 20\nRabu    : ███████ 35\nKamis   : ██████ 30\nJumat   : ██████████ 50\n\nPada hari apa pengunjung paling SEDIKIT?',
+    opts: ['Senin','Selasa','Rabu','Kamis'],
+    ans: 'Selasa' },
+  { topic: 'Numerasi (Grafik)',
+    q: 'GRAFIK PENGUNJUNG PERPUSTAKAAN (1 █ = 5 siswa):\n\nSenin   : █████ 25\nSelasa  : ████ 20\nRabu    : ███████ 35\nKamis   : ██████ 30\nJumat   : ██████████ 50\n\nTotal pengunjung selama 5 hari adalah ...',
+    opts: ['150 siswa','160 siswa','170 siswa','180 siswa'],
+    ans: '160 siswa' },
+  { topic: 'Numerasi (Grafik)',
+    q: 'GRAFIK PENJUALAN ROTI (bungkus):\n\nSenin    : 30\nSelasa   : 45\nRabu     : 25\nKamis    : 50\nJumat    : 40\n\nRata-rata penjualan roti per hari adalah ... bungkus',
+    opts: ['35 bungkus','38 bungkus','40 bungkus','45 bungkus'],
+    ans: '38 bungkus' },
+  { topic: 'Numerasi (Grafik)',
+    q: 'DATA SUHU UDARA DI SUATU KOTA:\n\nPagi     : 22°C\nSiang    : 32°C\nSore     : 28°C\nMalam    : 24°C\n\nSelisih suhu tertinggi dan terendah adalah ...',
+    opts: ['6°C','8°C','10°C','12°C'],
+    ans: '10°C' },
+
+  /* ---- J. TOKOH, WATAK, LATAR, WAKTU, AMANAT (25) ---- */
+  { topic: 'Tokoh Cerita',
+    q: 'Bacalah cerita berikut!\n\nPada suatu pagi yang cerah, Kancil berjalan santai di tepi sungai. Ia ingin menyeberangi sungai untuk mencari buah-buahan. Kancil melihat Buaya sedang berjemur. Dengan cerdik, Kancil memanggil Buaya dan berkata bahwa Raja ingin menghitung jumlah buaya di sungai. Buaya pun memanggil seluruh temannya untuk berbaris. Kancil melompat dari punggung buaya satu ke buaya lainnya. Setelah sampai di seberang, Kancil tertawa dan berkata bahwa ia telah menipu Buaya. Buaya hanya bisa marah tanpa bisa berbuat apa-apa.\n\nSiapakah TOKOH UTAMA dalam cerita tersebut?',
+    opts: ['Kancil','Buaya','Raja','Petani'],
+    ans: 'Kancil' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nPada suatu pagi yang cerah, Kancil berjalan santai di tepi sungai. Ia ingin menyeberangi sungai untuk mencari buah-buahan. Kancil melihat Buaya sedang berjemur. Dengan cerdik, Kancil memanggil Buaya dan berkata bahwa Raja ingin menghitung jumlah buaya di sungai. Buaya pun memanggil seluruh temannya untuk berbaris. Kancil melompat dari punggung buaya satu ke buaya lainnya. Setelah sampai di seberang, Kancil tertawa dan berkata bahwa ia telah menipu Buaya. Buaya hanya bisa marah tanpa bisa berbuat apa-apa.\n\nWATAK tokoh Kancil adalah ...',
+    opts: ['Cerdik dan licik','Sombong dan angkuh','Rajin dan rajin','Jujur dan baik hati'],
+    ans: 'Cerdik dan licik' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nPada suatu pagi yang cerah, Kancil berjalan santai di tepi sungai. Ia ingin menyeberangi sungai untuk mencari buah-buahan. Kancil melihat Buaya sedang berjemur. Dengan cerdik, Kancil memanggil Buaya dan berkata bahwa Raja ingin menghitung jumlah buaya di sungai. Buaya pun memanggil seluruh temannya untuk berbaris. Kancil melompat dari punggung buaya satu ke buaya lainnya. Setelah sampai di seberang, Kancil tertawa dan berkata bahwa ia telah menipu Buaya. Buaya hanya bisa marah tanpa bisa berbuat apa-apa.\n\nWATAK tokoh Buaya adalah ...',
+    opts: ['Mudah percaya dan polos','Cerdik dan licik','Sombong dan keras kepala','Pemberani dan bijaksana'],
+    ans: 'Mudah percaya dan polos' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nPada suatu pagi yang cerah, Kancil berjalan santai di tepi sungai. Ia ingin menyeberangi sungai untuk mencari buah-buahan. Kancil melihat Buaya sedang berjemur. Dengan cerdik, Kancil memanggil Buaya dan berkata bahwa Raja ingin menghitung jumlah buaya di sungai. Buaya pun memanggil seluruh temannya untuk berbaris. Kancil melompat dari punggung buaya satu ke buaya lainnya. Setelah sampai di seberang, Kancil tertawa dan berkata bahwa ia telah menipu Buaya. Buaya hanya bisa marah tanpa bisa berbuat apa-apa.\n\nLATAR TEMPAT cerita tersebut adalah ...',
+    opts: ['Tepi sungai','Hutan belantara','Sawah yang luas','Puncak gunung'],
+    ans: 'Tepi sungai' },
+  { topic: 'Latar Waktu',
+    q: 'Bacalah cerita berikut!\n\nPada suatu pagi yang cerah, Kancil berjalan santai di tepi sungai. Ia ingin menyeberangi sungai untuk mencari buah-buahan. Kancil melihat Buaya sedang berjemur. Dengan cerdik, Kancil memanggil Buaya dan berkata bahwa Raja ingin menghitung jumlah buaya di sungai. Buaya pun memanggil seluruh temannya untuk berbaris. Kancil melompat dari punggung buaya satu ke buaya lainnya. Setelah sampai di seberang, Kancil tertawa dan berkata bahwa ia telah menipu Buaya. Buaya hanya bisa marah tanpa bisa berbuat apa-apa.\n\nLATAR WAKTU cerita tersebut adalah ...',
+    opts: ['Pagi hari','Siang hari','Sore hari','Malam hari'],
+    ans: 'Pagi hari' },
+  { topic: 'Tokoh Cerita',
+    q: 'Bacalah cerita berikut!\n\nDi sebuah desa nelayan, hiduplah seorang janda bernama Mande Rubayah bersama anaknya, Malin Kundang. Malin tumbuh menjadi pemuda yang tampan dan rajin. Ia memutuskan merantau ke negeri jauh untuk mengubah nasib. Bertahun-tahun kemudian, Malin kembali sebagai orang kaya dengan kapal besar. Namun, ia malu mengakui ibunya yang sudah tua dan berpakaian lusuh. Mande Rubayah bersedih dan berdoa agar Malin dihukum. Tak lama kemudian, badai datang dan kapal Malin hancur. Malin berubah menjadi batu.\n\nSiapakah TOKOH UTAMA dalam cerita tersebut?',
+    opts: ['Malin Kundang','Mande Rubayah','Nelayan','Kapten kapal'],
+    ans: 'Malin Kundang' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nDi sebuah desa nelayan, hiduplah seorang janda bernama Mande Rubayah bersama anaknya, Malin Kundang. Malin tumbuh menjadi pemuda yang tampan dan rajin. Ia memutuskan merantau ke negeri jauh untuk mengubah nasib. Bertahun-tahun kemudian, Malin kembali sebagai orang kaya dengan kapal besar. Namun, ia malu mengakui ibunya yang sudah tua dan berpakaian lusuh. Mande Rubayah bersedih dan berdoa agar Malin dihukum. Tak lama kemudian, badai datang dan kapal Malin hancur. Malin berubah menjadi batu.\n\nWATAK tokoh Malin Kundang setelah menjadi kaya adalah ...',
+    opts: ['Durhaka dan malu pada ibunya','Rajin dan berbakti','Sabar dan penyayang','Jujur dan rendah hati'],
+    ans: 'Durhaka dan malu pada ibunya' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nDi sebuah desa nelayan, hiduplah seorang janda bernama Mande Rubayah bersama anaknya, Malin Kundang. Malin tumbuh menjadi pemuda yang tampan dan rajin. Ia memutuskan merantau ke negeri jauh untuk mengubah nasib. Bertahun-tahun kemudian, Malin kembali sebagai orang kaya dengan kapal besar. Namun, ia malu mengakui ibunya yang sudah tua dan berpakaian lusuh. Mande Rubayah bersedih dan berdoa agar Malin dihukum. Tak lama kemudian, badai datang dan kapal Malin hancur. Malin berubah menjadi batu.\n\nWATAK tokoh Mande Rubayah adalah ...',
+    opts: ['Sabar dan penyayang','Durhaka dan sombong','Cerdik dan licik','Kikir dan serakah'],
+    ans: 'Sabar dan penyayang' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nDi sebuah desa nelayan, hiduplah seorang janda bernama Mande Rubayah bersama anaknya, Malin Kundang. Malin tumbuh menjadi pemuda yang tampan dan rajin. Ia memutuskan merantau ke negeri jauh untuk mengubah nasib. Bertahun-tahun kemudian, Malin kembali sebagai orang kaya dengan kapal besar. Namun, ia malu mengakui ibunya yang sudah tua dan berpakaian lusuh. Mande Rubayah bersedih dan berdoa agar Malin dihukum. Tak lama kemudian, badai datang dan kapal Malin hancur. Malin berubah menjadi batu.\n\nLATAR TEMPAT cerita tersebut adalah ...',
+    opts: ['Desa nelayan di tepi pantai','Kota besar yang ramai','Hutan belantara','Pegunungan yang tinggi'],
+    ans: 'Desa nelayan di tepi pantai' },
+  { topic: 'Tokoh Cerita',
+    q: 'Bacalah cerita berikut!\n\nDi dalam hutan yang lebat, hiduplah seekor semut kecil bernama Semut. Setiap hari ia bekerja keras mengumpulkan makanan untuk musim dingin. Suatu hari, ia bertemu dengan Kepompong yang tergantung di dahan pohon. Kepompong menertawakan Semut yang selalu bekerja keras. Semut tidak marah, ia hanya tersenyum dan berkata bahwa kerja keras akan berbuah manis. Beberapa minggu kemudian, Kepompong berubah menjadi kupu-kupu yang indah. Kupu-kupu menyesali perbuatannya dan meminta maaf kepada Semut. Semut memaafkan dengan senang hati.\n\nSiapakah TOKOH dalam cerita tersebut?',
+    opts: ['Semut dan Kepompong','Semut dan Lebah','Kupu-kupu dan Burung','Kepompong dan Cacing'],
+    ans: 'Semut dan Kepompong' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nDi dalam hutan yang lebat, hiduplah seekor semut kecil bernama Semut. Setiap hari ia bekerja keras mengumpulkan makanan untuk musim dingin. Suatu hari, ia bertemu dengan Kepompong yang tergantung di dahan pohon. Kepompong menertawakan Semut yang selalu bekerja keras. Semut tidak marah, ia hanya tersenyum dan berkata bahwa kerja keras akan berbuah manis. Beberapa minggu kemudian, Kepompong berubah menjadi kupu-kupu yang indah. Kupu-kupu menyesali perbuatannya dan meminta maaf kepada Semut. Semut memaafkan dengan senang hati.\n\nWATAK tokoh Semut adalah ...',
+    opts: ['Rajin, sabar, dan pemaaf','Malas dan pemarah','Sombong dan angkuh','Penakut dan pemalu'],
+    ans: 'Rajin, sabar, dan pemaaf' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nDi dalam hutan yang lebat, hiduplah seekor semut kecil bernama Semut. Setiap hari ia bekerja keras mengumpulkan makanan untuk musim dingin. Suatu hari, ia bertemu dengan Kepompong yang tergantung di dahan pohon. Kepompong menertawakan Semut yang selalu bekerja keras. Semut tidak marah, ia hanya tersenyum dan berkata bahwa kerja keras akan berbuah manis. Beberapa minggu kemudian, Kepompong berubah menjadi kupu-kupu yang indah. Kupu-kupu menyesali perbuatannya dan meminta maaf kepada Semut. Semut memaafkan dengan senang hati.\n\nWATAK tokoh Kepompong pada awal cerita adalah ...',
+    opts: ['Sombong dan suka mengejek','Rajin dan sabar','Baik hati dan pemaaf','Jujur dan rendah hati'],
+    ans: 'Sombong dan suka mengejek' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nDi dalam hutan yang lebat, hiduplah seekor semut kecil bernama Semut. Setiap hari ia bekerja keras mengumpulkan makanan untuk musim dingin. Suatu hari, ia bertemu dengan Kepompong yang tergantung di dahan pohon. Kepompong menertawakan Semut yang selalu bekerja keras. Semut tidak marah, ia hanya tersenyum dan berkata bahwa kerja keras akan berbuah manis. Beberapa minggu kemudian, Kepompong berubah menjadi kupu-kupu yang indah. Kupu-kupu menyesali perbuatannya dan meminta maaf kepada Semut. Semut memaafkan dengan senang hati.\n\nLATAR TEMPAT cerita tersebut adalah ...',
+    opts: ['Hutan yang lebat','Tepi pantai','Sawah yang luas','Kota yang ramai'],
+    ans: 'Hutan yang lebat' },
+  { topic: 'Tokoh Cerita',
+    q: 'Bacalah cerita berikut!\n\nSetiap malam, Rina belajar dengan tekun di kamarnya. Ia selalu mengerjakan PR sebelum bermain. Ibunya sering mengingatkan Rina untuk tidak belajar terlalu malam. Rina tersenyum dan berkata bahwa ia ingin menjadi juara kelas. Pada hari pengumuman, Rina berhasil meraih peringkat pertama di kelasnya. Ayah dan ibunya sangat bangga. Rina berjanji akan terus belajar dengan rajin.\n\nSiapakah TOKOH UTAMA dalam cerita tersebut?',
+    opts: ['Rina','Ibu Rina','Ayah Rina','Guru Rina'],
+    ans: 'Rina' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nSetiap malam, Rina belajar dengan tekun di kamarnya. Ia selalu mengerjakan PR sebelum bermain. Ibunya sering mengingatkan Rina untuk tidak belajar terlalu malam. Rina tersenyum dan berkata bahwa ia ingin menjadi juara kelas. Pada hari pengumuman, Rina berhasil meraih peringkat pertama di kelasnya. Ayah dan ibunya sangat bangga. Rina berjanji akan terus belajar dengan rajin.\n\nWATAK tokoh Rina adalah ...',
+    opts: ['Rajin, tekun, dan disiplin','Malas dan suka bermain','Sombong dan angkuh','Pemalas dan penakut'],
+    ans: 'Rajin, tekun, dan disiplin' },
+  { topic: 'Latar Waktu',
+    q: 'Bacalah cerita berikut!\n\nSetiap malam, Rina belajar dengan tekun di kamarnya. Ia selalu mengerjakan PR sebelum bermain. Ibunya sering mengingatkan Rina untuk tidak belajar terlalu malam. Rina tersenyum dan berkata bahwa ia ingin menjadi juara kelas. Pada hari pengumuman, Rina berhasil meraih peringkat pertama di kelasnya. Ayah dan ibunya sangat bangga. Rina berjanji akan terus belajar dengan rajin.\n\nLATAR WAKTU cerita tersebut adalah ...',
+    opts: ['Malam hari','Pagi hari','Siang hari','Sore hari'],
+    ans: 'Malam hari' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nSetiap malam, Rina belajar dengan tekun di kamarnya. Ia selalu mengerjakan PR sebelum bermain. Ibunya sering mengingatkan Rina untuk tidak belajar terlalu malam. Rina tersenyum dan berkata bahwa ia ingin menjadi juara kelas. Pada hari pengumuman, Rina berhasil meraih peringkat pertama di kelasnya. Ayah dan ibunya sangat bangga. Rina berjanji akan terus belajar dengan rajin.\n\nLATAR TEMPAT utama cerita tersebut adalah ...',
+    opts: ['Kamar Rina','Sekolah','Taman bermain','Pasar'],
+    ans: 'Kamar Rina' },
+  { topic: 'Tokoh Cerita',
+    q: 'Bacalah cerita berikut!\n\nPada sore hari, Doni, Sinta, dan Bima bermain di pantai. Mereka membangun istana pasir dengan riang gembira. Doni bertugas mengangkut pasir. Sinta yang teliti menghias istana dengan kerang. Bima yang lucu membuat lelucon hingga teman-temannya tertawa. Tiba-tiba ombak besar datang dan merusak istana pasir mereka. Meskipun sedih, mereka tetap tersenyum dan membangun istana pasir baru bersama-sama.\n\nSiapakah TOKOH dalam cerita tersebut?',
+    opts: ['Doni, Sinta, dan Bima','Doni, Sinta, dan Ibu','Bima, Ayah, dan Doni','Sinta, Bima, dan Guru'],
+    ans: 'Doni, Sinta, dan Bima' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nPada sore hari, Doni, Sinta, dan Bima bermain di pantai. Mereka membangun istana pasir dengan riang gembira. Doni bertugas mengangkut pasir. Sinta yang teliti menghias istana dengan kerang. Bima yang lucu membuat lelucon hingga teman-temannya tertawa. Tiba-tiba ombak besar datang dan merusak istana pasir mereka. Meskipun sedih, mereka tetap tersenyum dan membangun istana pasir baru bersama-sama.\n\nWATAK tokoh Sinta adalah ...',
+    opts: ['Teliti','Lucu','Kuat','Pemalas'],
+    ans: 'Teliti' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nPada sore hari, Doni, Sinta, dan Bima bermain di pantai. Mereka membangun istana pasir dengan riang gembira. Doni bertugas mengangkut pasir. Sinta yang teliti menghias istana dengan kerang. Bima yang lucu membuat lelucon hingga teman-temannya tertawa. Tiba-tiba ombak besar datang dan merusak istana pasir mereka. Meskipun sedih, mereka tetap tersenyum dan membangun istana pasir baru bersama-sama.\n\nWATAK tokoh Bima adalah ...',
+    opts: ['Lucu dan suka bercanda','Teliti dan rajin','Pemarah dan sombong','Pendiam dan penakut'],
+    ans: 'Lucu dan suka bercanda' },
+  { topic: 'Latar Waktu',
+    q: 'Bacalah cerita berikut!\n\nPada sore hari, Doni, Sinta, dan Bima bermain di pantai. Mereka membangun istana pasir dengan riang gembira. Doni bertugas mengangkut pasir. Sinta yang teliti menghias istana dengan kerang. Bima yang lucu membuat lelucon hingga teman-temannya tertawa. Tiba-tiba ombak besar datang dan merusak istana pasir mereka. Meskipun sedih, mereka tetap tersenyum dan membangun istana pasir baru bersama-sama.\n\nLATAR WAKTU cerita tersebut adalah ...',
+    opts: ['Sore hari','Pagi hari','Malam hari','Siang hari'],
+    ans: 'Sore hari' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nPada sore hari, Doni, Sinta, dan Bima bermain di pantai. Mereka membangun istana pasir dengan riang gembira. Doni bertugas mengangkut pasir. Sinta yang teliti menghias istana dengan kerang. Bima yang lucu membuat lelucon hingga teman-temannya tertawa. Tiba-tiba ombak besar datang dan merusak istana pasir mereka. Meskipun sedih, mereka tetap tersenyum dan membangun istana pasir baru bersama-sama.\n\nLATAR TEMPAT cerita tersebut adalah ...',
+    opts: ['Pantai','Hutan','Sekolah','Pasar'],
+    ans: 'Pantai' },
+  { topic: 'Watak Tokoh',
+    q: 'Bacalah cerita berikut!\n\nKakek Ahmad adalah orang yang sangat penyayang. Setiap pagi ia menyirami pohon mangga di halaman rumahnya dengan penuh perhatian. Ia juga rajin memupuk dan memangkas dahan pohon itu. Cucunya, Dika, sering bertanya mengapa Kakek begitu rajin merawat pohon mangga. Kakek tersenyum dan berkata bahwa merawat pohon sama seperti merawat kehidupan. Beberapa tahun kemudian, pohon mangga itu berbuah lebat. Kakek dengan senang hati membagikan buah mangga kepada tetangga dan anak-anak di sekitar rumahnya.\n\nWATAK tokoh Kakek Ahmad adalah ...',
+    opts: ['Penyayang dan dermawan','Pemalas dan kikir','Sombong dan angkuh','Pemarah dan pelit'],
+    ans: 'Penyayang dan dermawan' },
+  { topic: 'Latar Tempat',
+    q: 'Bacalah cerita berikut!\n\nKakek Ahmad adalah orang yang sangat penyayang. Setiap pagi ia menyirami pohon mangga di halaman rumahnya dengan penuh perhatian. Ia juga rajin memupuk dan memangkas dahan pohon itu. Cucunya, Dika, sering bertanya mengapa Kakek begitu rajin merawat pohon mangga. Kakek tersenyum dan berkata bahwa merawat pohon sama seperti merawat kehidupan. Beberapa tahun kemudian, pohon mangga itu berbuah lebat. Kakek dengan senang hati membagikan buah mangga kepada tetangga dan anak-anak di sekitar rumahnya.\n\nLATAR TEMPAT cerita tersebut adalah ...',
+    opts: ['Halaman rumah Kakek','Sawah','Pasar','Hutan'],
+    ans: 'Halaman rumah Kakek' },
+  { topic: 'Latar Waktu',
+    q: 'Bacalah cerita berikut!\n\nKakek Ahmad adalah orang yang sangat penyayang. Setiap pagi ia menyirami pohon mangga di halaman rumahnya dengan penuh perhatian. Ia juga rajin memupuk dan memangkas dahan pohon itu. Cucunya, Dika, sering bertanya mengapa Kakek begitu rajin merawat pohon mangga. Kakek tersenyum dan berkata bahwa merawat pohon sama seperti merawat kehidupan. Beberapa tahun kemudian, pohon mangga itu berbuah lebat. Kakek dengan senang hati membagikan buah mangga kepada tetangga dan anak-anak di sekitar rumahnya.\n\nLATAR WAKTU pada kegiatan Kakek menyirami pohon adalah ...',
+    opts: ['Pagi hari','Siang hari','Sore hari','Malam hari'],
+    ans: 'Pagi hari' },
+  { topic: 'Amanat Cerita',
+    q: 'Bacalah cerita berikut!\n\nDi tepi sungai yang jernih, seekor semut kecil tercebur ke dalam air. Ia berteriak minta tolong. Seekor merpati putih yang sedang bertengger di dahan mendengar teriakan itu. Merpati segera memetik sehelai daun dan menjatuhkannya ke dekat semut. Semut naik ke atas daun dan berhasil diselamatkan. Beberapa hari kemudian, seorang pemburu membidikkan senapannya ke arah merpati. Semut yang melihat hal itu segera menggigit kaki pemburu. Pemburu terkejut dan bidikannya meleset. Merpati pun terbang menyelamatkan diri. Sejak itu, merpati dan semut menjadi sahabat sejati.\n\nAMANAT yang terkandung dalam cerita tersebut adalah ...',
+    opts: ['Kebaikan akan dibalas dengan kebaikan pula','Kekayaan adalah segalanya','Jangan pernah menolong orang lain','Kekuatan lebih penting daripada kebaikan'],
+    ans: 'Kebaikan akan dibalas dengan kebaikan pula' }
+];
+
+/* ---- Fungsi soal (tanpa repeat langsung) ---- */
+let lastQuestionIdx = -1;
+function makeQuestion() {
+  let idx;
+  do { idx = randInt(0, QUESTION_BANK.length - 1); }
+  while (idx === lastQuestionIdx && QUESTION_BANK.length > 1);
+  lastQuestionIdx = idx;
+  const item = QUESTION_BANK[idx];
+  const opts = shuffle(item.opts);
+  return { topic: item.topic, text: item.q, answer: item.ans, options: opts };
+}
+
+/* =========================================================
+   6. MODAL KUIS
+   ========================================================= */
+const quizModal = document.getElementById('quizModal');
+let quizResolve = null;
+
+function askQuiz(headline, sub) {
+  return new Promise(resolve => {
+    quizResolve = resolve;
+    const q = makeQuestion();
+    document.getElementById('quizHeadline').textContent = headline;
+    document.getElementById('quizSub').textContent = `Materi: ${q.topic} — ${sub}`;
+    document.getElementById('quizQuestion').textContent = q.text;
+    const fb = document.getElementById('quizFeedback');
+    fb.textContent = ''; fb.className = 'quiz-feedback';
+    const wrap = document.getElementById('quizOptions');
+    wrap.innerHTML = '';
+    q.options.forEach(val => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.textContent = val;
+      btn.onclick = () => answerQuiz(btn, val, q.answer);
+      wrap.appendChild(btn);
+    });
+    quizModal.classList.remove('hidden');
+  });
+}
+
+function answerQuiz(btn, val, answer) {
+  const fb = document.getElementById('quizFeedback');
+  const allBtns = document.querySelectorAll('#quizOptions .opt-btn');
+  allBtns.forEach(b => (b.disabled = true));
+  if (val === answer) {
+    btn.classList.add('correct');
+    Music.sfxCorrect();
+    fb.textContent = '✅ Hebat! Jawabanmu benar!';
+    fb.className = 'quiz-feedback ok';
+    setTimeout(() => {
+      quizModal.classList.add('hidden');
+      if (quizResolve) { quizResolve(true); quizResolve = null; }
+    }, 1100);
+  } else {
+    btn.classList.add('wrong');
+    Music.sfxWrong();
+    allBtns.forEach(b => { if (b.textContent === answer) b.classList.add('correct'); });
+    fb.textContent = `❌ Belum tepat. Jawaban benar: ${answer}`;
+    fb.className = 'quiz-feedback bad';
+    setTimeout(() => {
+      quizModal.classList.add('hidden');
+      if (quizResolve) { quizResolve(false); quizResolve = null; }
+    }, 2400);
+  }
+}
+
+/* =========================================================
+   7. LOGIKA GAME
+   ========================================================= */
+const logEl = document.getElementById('log');
+function log(msg) {
+  const div = document.createElement('div');
+  div.textContent = msg;
+  logEl.prepend(div);
+  while (logEl.children.length > 12) logEl.removeChild(logEl.lastChild);
+}
+function updateHUD() {
+  state.players.forEach((p, i) => {
+    document.getElementById('pcard' + i).classList.toggle('active', i === state.turn && !state.gameOver);
+    document.getElementById('score' + i).textContent = p.score;
+    document.getElementById('pos' + i).textContent = p.pos === 0 ? 'Start' : p.pos;
+  });
+  document.getElementById('turnEmoji').textContent = state.players[state.turn].emoji;
+  document.getElementById('turnName').textContent = state.players[state.turn].name;
+  document.getElementById('rollBtn').disabled = state.busy || state.gameOver;
+  draw();
+}
+async function animateDice() {
+  const faces = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+  const el = document.getElementById('dice');
+  el.classList.add('rolling');
+  for (let i = 0; i < 12; i++) { el.textContent = faces[randInt(0, 5)]; await sleep(60); }
+  const val = randInt(1, 6);
+  el.textContent = faces[val - 1];
+  el.classList.remove('rolling');
+  return val;
+}
+async function moveSteps(player, steps) {
+  for (let i = 0; i < steps; i++) {
+    if (player.pos >= 100) break;
+    player.pos++; updateHUD(); await sleep(150);
+  }
+}
+async function jumpTo(player, target) {
+  const dir = target > player.pos ? 1 : -1;
+  while (player.pos !== target) { player.pos += dir; updateHUD(); await sleep(65); }
+}
+async function handleTile(player) {
+  const pos = player.pos;
+  const isLadder = !!LADDERS[pos];
+  const isSnake  = !!SNAKES[pos];
+  const isQuiz   = QUIZ_TILES.includes(pos);
+  let headline = '❓ KUIS', sub = `Jawab soal untuk petak ${pos}`;
+  if (isLadder) { headline = '🪜 TANGGA!'; sub = `Benar untuk naik ke petak ${LADDERS[pos]}`; }
+  else if (isSnake) { headline = '🐍 ADA ULAR!'; sub = `Benar agar tidak turun ke petak ${SNAKES[pos]}`; }
+  else if (isQuiz) { headline = '⭐ PETAK BONUS!'; sub = 'Benar untuk bonus poin!'; }
+
+  const ok = await askQuiz(headline, sub);
+
+  if (isLadder) {
+    const to = LADDERS[pos];
+    if (ok) {
+      player.score += 10;
+      log(`✅ Benar! ${player.name} naik tangga ke petak ${to} (+10 poin).`);
+      Music.sfxLadder();
+      await jumpTo(player, to);
+    } else log(`❌ Salah. ${player.name} tetap di petak ${pos}.`);
+    return;
+  }
+  if (isSnake) {
+    const to = SNAKES[pos];
+    if (ok) { player.score += 10; log(`✅ Benar! ${player.name} lolos dari ular (+10 poin).`); }
+    else { log(`❌ Salah. ${player.name} meluncur turun ke petak ${to}.`); Music.sfxSnake(); await jumpTo(player, to); }
+    return;
+  }
+  if (isQuiz) {
+    if (ok) { player.score += 15; log(`⭐ Benar! Bonus +15 poin untuk ${player.name}.`); }
+    else log(`❌ Belum tepat, tidak ada bonus.`);
+    return;
+  }
+  if (ok) { player.score += 5; log(`✅ Benar! ${player.name} mendapat +5 poin di petak ${pos}.`); }
+  else { player.score = Math.max(0, player.score - 2); log(`❌ Salah. ${player.name} kehilangan 2 poin.`); }
+}
+async function rollDice() {
+  if (state.busy || state.gameOver) return;
+  Music.start(); Music.sfxDice();
+  state.busy = true; updateHUD();
+  const player = state.players[state.turn];
+  const value = await animateDice();
+  log(`🎲 ${player.name} melempar dadu: ${value}`);
+  await moveSteps(player, value); updateHUD();
+  if (player.pos >= 100) { declareWin(player); return; }
+  await handleTile(player); updateHUD();
+  if (player.pos >= 100) { declareWin(player); return; }
+  if (state.gameOver) return;
+  state.turn = 1 - state.turn; state.busy = false; updateHUD();
+}
+function declareWin(player) {
+  state.gameOver = true; state.busy = false; player.score += 20;
+  log(`🏆 ${player.name} MENCAPAI PETAK 100 dan MENANG! (+20 poin bonus)`);
+  updateHUD(); Music.sfxWin();
+  document.getElementById('winTitle').textContent = `${player.emoji} ${player.name} Menang!`;
+  document.getElementById('winSub').textContent =
+    `Skor akhir — ${state.players[0].name}: ${state.players[0].score} ⭐ | ${state.players[1].name}: ${state.players[1].score} ⭐`;
+  document.getElementById('winModal').classList.remove('hidden');
+}
+function resetGame() {
+  state.players.forEach(p => { p.pos = 0; p.score = 0; });
+  state.turn = 0; state.busy = false; state.gameOver = false;
+  document.getElementById('dice').textContent = '⚀';
+  logEl.innerHTML = '';
+  log('🎮 Permainan baru dimulai. Setiap berhenti di petak, soal akan muncul!');
+  document.getElementById('quizModal').classList.add('hidden');
+  document.getElementById('winModal').classList.add('hidden');
+  updateHUD();
+}
+
+/* =========================================================
+   8. EVENT LISTENER
+   ========================================================= */
+document.getElementById('rollBtn').addEventListener('click', rollDice);
+document.getElementById('resetBtn').addEventListener('click', resetGame);
+document.getElementById('winResetBtn').addEventListener('click', resetGame);
+const musicBtn = document.getElementById('musicBtn');
+musicBtn.addEventListener('click', () => {
+  const on = Music.toggle();
+  musicBtn.textContent = `🎵 Musik: ${on ? 'ON' : 'OFF'}`;
+  musicBtn.classList.toggle('off', !on);
+});
+
+/* =========================================================
+   9. MULAI
+   ========================================================= */
+log('🎮 Selamat datang! Klik "Lempar Dadu" untuk memulai. 77 soal siap menguji!');
+updateHUD();
+</script>
+</body>
+</html>
